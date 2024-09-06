@@ -1,6 +1,7 @@
 #include <WiFiNINA.h>
 #include <WiFiClient.h>
 #include <ArduinoHttpClient.h>
+#include <DHT.h>
 
 // Replace with your network credentials
 const char* ssid = "your_SSID";
@@ -14,11 +15,22 @@ const char* path = "/macros/s/YOUR_SCRIPT_ID/exec"; // Use your deployment ID he
 WiFiClient wifiClient;
 HttpClient client = HttpClient(wifiClient, server, 443);
 
+// DHT22 Sensor Configuration
+#define DHTPIN 2          // Digital pin connected to the DHT22 sensor
+#define DHTTYPE DHT22     // DHT22 sensor type
+DHT dht(DHTPIN, DHTTYPE); // Initialize DHT sensor
+
+// MQ2 Sensor Configuration
+const int mq2Pin = A0;    // Analog pin connected to the MQ2 sensor
+
 void setup() {
   Serial.begin(115200);
   while (!Serial) {
     ;  // Wait for Serial to be ready
   }
+
+  // Initialize DHT sensor
+  dht.begin();
 
   // Connect to WiFi
   Serial.print("Connecting to ");
@@ -31,12 +43,21 @@ void setup() {
 }
 
 void loop() {
-  // Simulated sensor data (replace this with actual sensor data code)
-  float temperature = 25.0 + random(-500, 500) / 100.0;
-  float humidity = 50.0 + random(-200, 200) / 100.0;
-  
+  // Read temperature and humidity from DHT22
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
+  // Read gas level from MQ2 sensor
+  int gasLevel = analogRead(mq2Pin);
+
+  // Check if readings are valid
+  if (isnan(temperature) || isnan(humidity)) {
+    Serial.println("Failed to read from DHT22 sensor!");
+    return;
+  }
+
   // Create the request URL
-  String url = String(path) + "?value1=" + temperature + "&value2=" + humidity;
+  String url = String(path) + "?temperature=" + temperature + "&humidity=" + humidity + "&gasLevel=" + gasLevel;
 
   // Send data to Google Sheets
   Serial.print("Requesting URL: ");
@@ -55,5 +76,5 @@ void loop() {
   Serial.print("Response Body: ");
   Serial.println(response);
 
-  delay(60000);  // Delay before next loop (60 seconds)
+  delay(60000);  // Delay before the next loop (60 seconds)
 }
