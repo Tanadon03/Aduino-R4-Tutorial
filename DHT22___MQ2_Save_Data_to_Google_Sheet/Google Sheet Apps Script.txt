@@ -1,0 +1,10 @@
+function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = e.parameter;
+  
+  // Assuming 'value1', 'value2', 'value3' are the parameters you're sending from Arduino
+  const values = [new Date(), data.value1, data.value2, data.value3]; 
+  sheet.appendRow(values);
+  
+  return ContentService.createTextOutput("Data logged successfully");
+}
